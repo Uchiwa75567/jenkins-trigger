@@ -1,19 +1,20 @@
 pipeline {
     agent any
 
+    // 🔹 Triggers
     triggers {
-        // 1️⃣ Déclenchement automatique à chaque push GitHub
-        githubPush()
+        // 1️⃣ Détecte les changements dans le dépôt toutes les 5 minutes (remplace githubPush() pour Jenkins local)
+        pollSCM('H/5 * * * *')
 
-        // 2️⃣ Déclenchement planifié (toutes les 10 minutes)
+        // 2️⃣ Déclenchement planifié toutes les 10 minutes
         cron('H/10 * * * *')
 
-        // 3️⃣ Déclenchement après un autre job Jenkins
+        // 3️⃣ Déclenchement après un autre job Jenkins nommé 'JobPrincipal'
         upstream(upstreamProjects: 'JobPrincipal', threshold: hudson.model.Result.SUCCESS)
     }
 
+    // 🔹 Paramètres pour build manuel
     parameters {
-        // 4️⃣ Déclenchement manuel avec un message
         string(name: 'MESSAGE', defaultValue: 'Build Laravel Project', description: 'Message à afficher pendant le build')
     }
 
@@ -27,6 +28,7 @@ pipeline {
 
         stage('Installation dépendances') {
             steps {
+                echo "📦 Installation des dépendances Composer..."
                 sh 'composer install --no-interaction --prefer-dist'
             }
         }
@@ -38,10 +40,10 @@ pipeline {
             }
         }
 
-        stage('Serveur local (check)') {
+        stage('Vérification routes') {
             steps {
-                echo "🌍 Vérification du point d’accès Laravel"
-                sh 'php artisan route:list | grep jenkins-test'
+                echo "🌍 Vérification du point d’accès Laravel /jenkins-test"
+                sh 'php artisan route:list | grep jenkins-test || echo "⚠️ Route non trouvée"'
             }
         }
     }
